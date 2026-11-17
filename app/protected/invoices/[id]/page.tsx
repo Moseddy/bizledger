@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import IssueInvoiceButton from "../issue-invoice-button";
 
 export const metadata = {
   title: "Invoice Details | BizLedger",
@@ -249,24 +250,28 @@ export default async function InvoiceDetailsPage({
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              disabled
-              title="Printing will be implemented in a later step"
-              className="cursor-not-allowed rounded-lg border border-gray-300 px-5 py-3 font-medium text-gray-400 dark:border-gray-700 dark:text-gray-600"
-            >
-              Print Invoice
-            </button>
+  {invoice.status === "draft" && (
+    <IssueInvoiceButton invoiceId={invoice.id} />
+  )}
 
-            <button
-              type="button"
-              disabled
-              title="PDF export will be implemented in a later step"
-              className="cursor-not-allowed rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white opacity-50"
-            >
-              Download PDF
-            </button>
-          </div>
+  <button
+    type="button"
+    disabled
+    title="Printing will be implemented in a later step"
+    className="cursor-not-allowed rounded-lg border border-gray-300 px-5 py-3 font-medium text-gray-400 dark:border-gray-700 dark:text-gray-600"
+  >
+    Print Invoice
+  </button>
+
+  <button
+    type="button"
+    disabled
+    title="PDF export will be implemented in a later step"
+    className="cursor-not-allowed rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white opacity-50"
+  >
+    Download PDF
+  </button>
+</div>
         </div>
 
         {/* Invoice Summary */}

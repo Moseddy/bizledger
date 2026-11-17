@@ -1,10 +1,10 @@
-
 "use client";
 
 import { useMemo, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 type Business = {
   id: string;
@@ -362,12 +362,12 @@ export default function InvoiceForm({
             </p>
           )}
 
-          <a
+          <Link
             href="/protected/customers"
             className="mt-2 inline-block text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
           >
             Manage customers
-          </a>
+          </Link>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">

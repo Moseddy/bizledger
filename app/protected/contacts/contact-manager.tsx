@@ -1,7 +1,7 @@
-
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
@@ -357,22 +357,32 @@ export default function ContactManager({
                           {contact.email || "—"}
                         </td>
                         <td className="whitespace-nowrap px-5 py-4">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => openEditForm(contact)}
-                              title={`Edit ${singular.toLowerCase()}`}
-                              className="rounded-md border p-2 hover:bg-accent"
-                            >
-                              <Pencil size={15} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(contact)}
-                              title={`Delete ${singular.toLowerCase()}`}
-                              className="rounded-md border p-2 text-red-600 hover:bg-red-50"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
+                          <div className="flex justify-end items-center gap-2">
+  {isCustomer && (
+    <Link
+      href={`/protected/customers/${contact.id}`}
+      className="rounded-md border px-3 py-2 text-xs font-medium hover:bg-accent"
+    >
+      View History
+    </Link>
+  )}
+
+  <button
+    onClick={() => openEditForm(contact)}
+    title={`Edit ${singular.toLowerCase()}`}
+    className="rounded-md border p-2 hover:bg-accent"
+  >
+    <Pencil size={15} />
+  </button>
+
+  <button
+    onClick={() => handleDelete(contact)}
+    title={`Delete ${singular.toLowerCase()}`}
+    className="rounded-md border p-2 text-red-600 hover:bg-red-50"
+  >
+    <Trash2 size={15} />
+  </button>
+</div>
                         </td>
                       </tr>
                     ))}

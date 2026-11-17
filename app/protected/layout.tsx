@@ -14,6 +14,7 @@ const navigation = [
   { name: "Suppliers", href: "/protected/suppliers" },
   { name: "Reports", href: "/protected/reports" },
   { name: "Add Business", href: "/protected/businesses/new" },
+  { name: "Supplier Bills", href: "/protected/supplier-bills" },
 ];
 
 

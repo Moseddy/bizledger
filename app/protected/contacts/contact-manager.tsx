@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
@@ -71,8 +71,12 @@ export default function ContactManager({
   const nameField = isCustomer ? "customer_name" : "supplier_name";
   const table = isCustomer ? "customers" : "suppliers";
 
-  const getName = (contact: Contact) =>
-    (isCustomer ? contact.customer_name : contact.supplier_name) ?? "";
+  const getName = useCallback(
+  (contact: Contact) =>
+    (isCustomer ? contact.customer_name : contact.supplier_name) ?? "",
+  [isCustomer]
+);
+
 
   const filteredContacts = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -90,7 +94,7 @@ export default function ContactManager({
 
       return matchesBusiness && matchesSearch;
     });
-  }, [contacts, search, businessFilter]);
+  }, [contacts, search, getName, businessFilter]);
 
   const updateForm = (field: keyof ContactForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));

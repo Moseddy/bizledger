@@ -5,12 +5,16 @@ import { Suspense } from "react";
 import { AuthButton } from "@/components/auth-button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 
+
 const navigation = [
   { name: "Dashboard", href: "/protected" },
   { name: "Transactions", href: "/protected/transactions" },
+  { name: "Customers", href: "/protected/customers" },
+  { name: "Suppliers", href: "/protected/suppliers" },
   { name: "Reports", href: "/protected/reports" },
   { name: "Add Business", href: "/protected/businesses/new" },
 ];
+
 
 export default function ProtectedLayout({
   children,

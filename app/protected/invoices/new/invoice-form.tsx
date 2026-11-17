@@ -24,7 +24,7 @@ type InvoiceItem = {
 };
 
 const inputClass =
-  "mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+  "mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-blue-400 dark:focus:ring-blue-900/40 dark:[color-scheme:dark]";
 
 const formatNaira = (amount: number) =>
   new Intl.NumberFormat("en-NG", {
@@ -60,7 +60,6 @@ export default function InvoiceForm({
   const [formData, setFormData] = useState({
     business_id: businesses[0]?.id ?? "",
     customer_id: "",
-    invoice_number: "",
     issue_date: getLocalDate(),
     due_date: "",
     notes: "",
@@ -153,11 +152,6 @@ export default function InvoiceForm({
       return;
     }
 
-    if (!formData.invoice_number.trim()) {
-      setError("Please enter an invoice number.");
-      return;
-    }
-
     if (!formData.issue_date) {
       setError("Please select an issue date.");
       return;
@@ -228,48 +222,51 @@ export default function InvoiceForm({
       }
 
       // Create the invoice header as a draft.
+      
+      // Create the invoice header and all its items atomically.
       const { data: invoice, error: invoiceError } = await supabase
-        .from("sales_invoices")
-        .insert({
-          business_id: formData.business_id,
-          customer_id: formData.customer_id,
-          invoice_number: formData.invoice_number.trim(),
-          issue_date: formData.issue_date,
-          due_date: formData.due_date || null,
-          total_amount: total,
-          status: "draft",
-          notes: formData.notes.trim() || null,
+        .rpc("create_sales_invoice_with_items", {
+          p_business_id: formData.business_id,
+          p_customer_id: formData.customer_id,
+          p_issue_date: formData.issue_date,
+          p_due_date: formData.due_date || null,
+          p_notes: formData.notes.trim() || null,
+          p_items: preparedItems,
         })
-        .select("id")
         .single();
 
       if (invoiceError) {
         throw invoiceError;
       }
 
-      // Save all invoice items.
-      const invoiceItems = preparedItems.map((item) => ({
-        business_id: formData.business_id,
-        invoice_id: invoice.id,
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("sales_invoice_items")
-        .insert(invoiceItems);
-
-      if (itemsError) {
-        throw new Error(
-          `The invoice header was created, but its items could not be saved. Invoice ID: ${invoice.id}. Details: ${itemsError.message}`
-        );
+      if (!invoice) {
+        throw new Error("The invoice could not be created.");
       }
 
-      setSuccess("Invoice draft created successfully.");
+      setSuccess(
+        `Invoice ${invoice.invoice_number} created successfully.`
+      );
+
+      // Reset the form.
+      setFormData({
+        business_id: businesses[0]?.id ?? "",
+        customer_id: "",
+        issue_date: getLocalDate(),
+        due_date: "",
+        notes: "",
+      });
+
+      setItems([
+        {
+          description: "",
+          quantity: "1",
+          unit_price: "",
+        },
+      ]);
 
       router.push("/protected/invoices");
       router.refresh();
+
     } catch (err) {
       setError(
         err instanceof Error
@@ -284,12 +281,12 @@ export default function InvoiceForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+      className="space-y-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900"
     >
       {error && (
         <div
           role="alert"
-          className="rounded-lg bg-red-50 p-4 text-sm text-red-700"
+          className="rounded-lg bg-red-50 p-4 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
         >
           {error}
         </div>
@@ -298,21 +295,21 @@ export default function InvoiceForm({
       {success && (
         <div
           role="status"
-          className="rounded-lg bg-green-50 p-4 text-sm text-green-700"
+          className="rounded-lg bg-green-50 p-4 text-sm text-green-700 dark:bg-green-950/40 dark:text-green-300"
         >
           {success}
         </div>
       )}
 
       <section className="space-y-5">
-        <h2 className="border-b pb-3 text-lg font-semibold text-gray-900">
+        <h2 className="border-b border-gray-200 pb-3 text-lg font-semibold text-gray-900 dark:border-gray-700 dark:text-gray-100">
           Invoice Information
         </h2>
 
         <div>
           <label
             htmlFor="business_id"
-            className="font-medium text-gray-700"
+            className="font-medium text-gray-700 dark:text-gray-300"
           >
             Business *
           </label>
@@ -336,7 +333,7 @@ export default function InvoiceForm({
         <div>
           <label
             htmlFor="customer_id"
-            className="font-medium text-gray-700"
+            className="font-medium text-gray-700 dark:text-gray-300"
           >
             Customer *
           </label>
@@ -359,7 +356,7 @@ export default function InvoiceForm({
           </select>
 
           {availableCustomers.length === 0 && (
-            <p className="mt-2 text-sm text-amber-700">
+            <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
               No customers are registered for this business. Add a customer
               before creating an invoice.
             </p>
@@ -367,38 +364,17 @@ export default function InvoiceForm({
 
           <a
             href="/protected/customers"
-            className="mt-2 inline-block text-sm font-medium text-blue-600 hover:underline"
+            className="mt-2 inline-block text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
           >
             Manage customers
           </a>
-        </div>
-
-        <div>
-          <label
-            htmlFor="invoice_number"
-            className="font-medium text-gray-700"
-          >
-            Invoice Number *
-          </label>
-
-          <input
-            id="invoice_number"
-            name="invoice_number"
-            type="text"
-            required
-            maxLength={100}
-            value={formData.invoice_number}
-            onChange={handleChange}
-            placeholder="e.g. INV-0001"
-            className={inputClass}
-          />
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label
               htmlFor="issue_date"
-              className="font-medium text-gray-700"
+              className="font-medium text-gray-700 dark:text-gray-300"
             >
               Issue Date *
             </label>
@@ -417,7 +393,7 @@ export default function InvoiceForm({
           <div>
             <label
               htmlFor="due_date"
-              className="font-medium text-gray-700"
+              className="font-medium text-gray-700 dark:text-gray-300"
             >
               Due Date
             </label>
@@ -437,7 +413,7 @@ export default function InvoiceForm({
         <div>
           <label
             htmlFor="notes"
-            className="font-medium text-gray-700"
+            className="font-medium text-gray-700 dark:text-gray-300"
           >
             Notes
           </label>
@@ -455,15 +431,15 @@ export default function InvoiceForm({
       </section>
 
       <section className="space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 pb-3 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Invoice Items
           </h2>
 
           <button
             type="button"
             onClick={addItem}
-            className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+            className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-950/40"
           >
             + Add Item
           </button>
@@ -476,10 +452,10 @@ export default function InvoiceForm({
           return (
             <div
               key={index}
-              className="rounded-lg border border-gray-200 p-4"
+              className="rounded-lg border border-gray-200 p-4 dark:border-gray-700"
             >
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-800">
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200">
                   Item {index + 1}
                 </h3>
 
@@ -487,7 +463,7 @@ export default function InvoiceForm({
                   <button
                     type="button"
                     onClick={() => removeItem(index)}
-                    className="text-sm font-medium text-red-600 hover:underline"
+                    className="text-sm font-medium text-red-600 hover:underline dark:text-red-400"
                   >
                     Remove
                   </button>
@@ -497,7 +473,7 @@ export default function InvoiceForm({
               <div>
                 <label
                   htmlFor={`description-${index}`}
-                  className="font-medium text-gray-700"
+                  className="font-medium text-gray-700 dark:text-gray-300"
                 >
                   Description *
                 </label>
@@ -520,7 +496,7 @@ export default function InvoiceForm({
                 <div>
                   <label
                     htmlFor={`quantity-${index}`}
-                    className="font-medium text-gray-700"
+                    className="font-medium text-gray-700 dark:text-gray-300"
                   >
                     Quantity *
                   </label>
@@ -542,7 +518,7 @@ export default function InvoiceForm({
                 <div>
                   <label
                     htmlFor={`unit-price-${index}`}
-                    className="font-medium text-gray-700"
+                    className="font-medium text-gray-700 dark:text-gray-300"
                   >
                     Unit Price (₦) *
                   </label>
@@ -563,11 +539,11 @@ export default function InvoiceForm({
                 </div>
 
                 <div>
-                  <label className="font-medium text-gray-700">
+                  <label className="font-medium text-gray-700 dark:text-gray-300">
                     Line Total
                   </label>
 
-                  <div className="mt-2 flex min-h-[50px] items-center rounded-lg bg-gray-100 px-4 font-semibold text-gray-900">
+                  <div className="mt-2 flex min-h-[50px] items-center rounded-lg bg-gray-100 px-4 font-semibold text-gray-900 dark:bg-gray-800 dark:text-gray-100">
                     {formatNaira(
                       Number.isFinite(lineTotal) ? lineTotal : 0
                     )}
@@ -578,13 +554,13 @@ export default function InvoiceForm({
           );
         })}
 
-        <div className="rounded-lg bg-gray-50 p-5">
+        <div className="rounded-lg bg-gray-50 p-5 dark:bg-gray-800/70">
           <div className="flex items-center justify-between gap-4">
-            <span className="text-lg font-semibold text-gray-700">
+            <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">
               Invoice Total
             </span>
 
-            <span className="text-2xl font-bold text-gray-900">
+            <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {formatNaira(invoiceTotal)}
             </span>
           </div>
@@ -596,7 +572,7 @@ export default function InvoiceForm({
           type="button"
           onClick={() => router.push("/protected/invoices")}
           disabled={loading}
-          className="rounded-lg border border-gray-300 px-6 py-3 font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          className="rounded-lg border border-gray-300 px-6 py-3 font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
         >
           Cancel
         </button>

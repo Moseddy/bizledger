@@ -9,6 +9,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 const navigation = [
   { name: "Dashboard", href: "/protected" },
   { name: "Transactions", href: "/protected/transactions" },
+  { name: "Invoices", href: "/protected/invoices" },
   { name: "Customers", href: "/protected/customers" },
   { name: "Suppliers", href: "/protected/suppliers" },
   { name: "Reports", href: "/protected/reports" },
